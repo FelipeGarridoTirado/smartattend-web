@@ -20,12 +20,36 @@ app.use(session({
     saveUninitialized: false
 }));
 
-// Conexión a la Base de Datos SQLite
+// Conexión a la Base de Datos SQLite (Con auto-creación de tablas)
 const db = new sqlite3.Database('./db/smartattend.db', (err) => {
     if (err) {
         console.error("Error conectando a la base de datos:", err.message);
     } else {
         console.log("Conectado a la base de datos SQLite.");
+        
+        // Crear las tablas automáticamente si no existen
+        db.serialize(() => {
+            db.run(`CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password TEXT,
+                rol TEXT
+            )`);
+            
+            db.run(`CREATE TABLE IF NOT EXISTS alumnos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT,
+                email TEXT
+            )`);
+
+            // Crear un administrador por defecto (si la tabla estaba vacía)
+            db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
+                if (!row) {
+                    db.run("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'admin')");
+                    console.log("Usuario admin creado por defecto.");
+                }
+            });
+        });
     }
 });
 
@@ -124,7 +148,7 @@ app.post('/admin/delete/:id', (req, res) => {
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
 // Exportar para Jest (Pruebas)
