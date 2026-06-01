@@ -20,15 +20,15 @@ app.use(session({
     saveUninitialized: false
 }));
 
-// Conexión a la Base de Datos SQLite (Con auto-creación de tablas)
+// Conexión a la Base de Datos SQLite (Con auto-creación y Seeding)
 const db = new sqlite3.Database('./db/smartattend.db', (err) => {
     if (err) {
         console.error("Error conectando a la base de datos:", err.message);
     } else {
         console.log("Conectado a la base de datos SQLite.");
         
-        // Crear las tablas automáticamente si no existen
         db.serialize(() => {
+            // 1. Crear las tablas
             db.run(`CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
@@ -42,19 +42,27 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
                 email TEXT
             )`);
 
-            // Crear un administrador por defecto (si la tabla estaba vacía)
+            // 2. Sembrar Usuarios (Admin y Alumno)
             db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
                 if (!row) {
                     db.run("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'admin')");
-                    console.log("Usuario admin creado por defecto.");
                 }
             });
 
-            // Crear un alumno de prueba por defecto
             db.get("SELECT * FROM usuarios WHERE username = 'felipe'", (err, row) => {
                 if (!row) {
                     db.run("INSERT INTO usuarios (username, password, rol) VALUES ('felipe', 'alumno123', 'alumno')");
-                    console.log("Usuario alumno creado por defecto.");
+                }
+            });
+
+            // 3. Sembrar Alumnos de prueba en la tabla principal
+            db.get("SELECT COUNT(*) as count FROM alumnos", (err, row) => {
+                // Si la tabla alumnos tiene 0 registros, insertamos los de prueba
+                if (row && row.count === 0) {
+                    db.run("INSERT INTO alumnos (nombre, email) VALUES ('Felipe Garrido', 'felipe@email.com')");
+                    db.run("INSERT INTO alumnos (nombre, email) VALUES ('María López', 'maria@email.com')");
+                    db.run("INSERT INTO alumnos (nombre, email) VALUES ('Carlos Gómez', 'carlos@email.com')");
+                    console.log("Alumnos de prueba sembrados con éxito.");
                 }
             });
         });
@@ -63,22 +71,16 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
 
 // --- RUTAS DE AUTENTICACIÓN ---
 
-// Página de inicio (Login) - Responde 200 OK para el Test
 app.get('/', (req, res) => {
-    // Le enviamos error: null para que EJS no crashee al cargar la primera vez
     res.render('login', { error: null });
 });
 
-// Procesar el Login
 app.post('/login', (req, res) => {
     const { username, password } = req.body;
-    
-    // Consulta para verificar el usuario
     db.get("SELECT * FROM usuarios WHERE username = ? AND password = ?", [username, password], (err, row) => {
         if (err) return res.status(500).send("Error en la base de datos");
         
         if (row) {
-            // Guardar sesión
             req.session.usuario = row;
             if (row.rol === 'admin') {
                 res.redirect('/admin');
@@ -86,13 +88,11 @@ app.post('/login', (req, res) => {
                 res.redirect('/alumno');
             }
         } else {
-            // Si falla la contraseña, recarga el login pero ahora sí envía el mensaje de error
             res.render('login', { error: "Usuario o contraseña incorrectos. Inténtalo de nuevo." });
         }
     });
 });
 
-// Cerrar sesión
 app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/');
@@ -100,25 +100,20 @@ app.get('/logout', (req, res) => {
 
 // --- RUTAS DEL ADMINISTRADOR (CRUD y Filtros) ---
 
-// Ver panel de administrador (Leer)
 app.get('/admin', (req, res) => {
-    // Protección de ruta - Responde 401 para el Test
     if (!req.session.usuario || req.session.usuario.rol !== 'admin') {
         return res.status(401).send('401 Unauthorized: Área restringida');
     }
 
     const { search, sort, order } = req.query;
-    
     let query = "SELECT * FROM alumnos";
     let queryParams = [];
 
-    // Si hay búsqueda, añadimos el WHERE
     if (search) {
         query += " WHERE nombre LIKE ?";
         queryParams.push('%' + search + '%');
     }
 
-    // Validación de columnas y orden para evitar inyecciones SQL
     const columnasValidas = ['id', 'nombre', 'email'];
     const ordenesValidos = ['ASC', 'DESC'];
     
@@ -127,14 +122,12 @@ app.get('/admin', (req, res) => {
 
     query += ` ORDER BY ${columnaOrden} ${tipoOrden}`;
 
-    // Ejecutamos la consulta
     db.all(query, queryParams, (err, alumnos) => {
         if (err) return res.status(500).send("Error en la base de datos");
         res.render('admin', { alumnos: alumnos, search: search });
     });
 });
 
-// Crear Alumno
 app.post('/admin/add', (req, res) => {
     if (!req.session.usuario || req.session.usuario.rol !== 'admin') return res.status(401).send('401 Unauthorized');
     const { nombre, email } = req.body;
@@ -144,7 +137,6 @@ app.post('/admin/add', (req, res) => {
     });
 });
 
-// Eliminar Alumno
 app.post('/admin/delete/:id', (req, res) => {
     if (!req.session.usuario || req.session.usuario.rol !== 'admin') return res.status(401).send('401 Unauthorized');
     const { id } = req.params;
@@ -155,7 +147,7 @@ app.post('/admin/delete/:id', (req, res) => {
 });
 
 // --- RUTA DEL ALUMNO ---
-// Vista del alumno (Solo para que no dé error 404 al entrar como 'felipe')
+
 app.get('/alumno', (req, res) => {
     if (!req.session.usuario || req.session.usuario.rol !== 'alumno') {
         return res.status(401).send('401 Unauthorized: Área restringida para alumnos');
