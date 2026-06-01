@@ -69,11 +69,11 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
             // Sembrar Asistencias
             db.get("SELECT COUNT(*) as count FROM asistencias", (err, row) => {
                 if (row && row.count === 0) {
-                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-20', 'Presente')");
-                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-21', 'Presente')");
-                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-22', 'Falta')");
-                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-23', 'Retraso')");
-                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-24', 'Presente')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2025-05-20', 'Presente')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2025-05-21', 'Presente')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2025-05-22', 'Falta')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2025-05-23', 'Retraso')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2025-05-24', 'Presente')");
                 }
             });
         });
