@@ -49,6 +49,14 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
                     console.log("Usuario admin creado por defecto.");
                 }
             });
+
+            // Crear un alumno de prueba por defecto
+            db.get("SELECT * FROM usuarios WHERE username = 'felipe'", (err, row) => {
+                if (!row) {
+                    db.run("INSERT INTO usuarios (username, password, rol) VALUES ('felipe', 'alumno123', 'alumno')");
+                    console.log("Usuario alumno creado por defecto.");
+                }
+            });
         });
     }
 });
@@ -144,6 +152,15 @@ app.post('/admin/delete/:id', (req, res) => {
         if (err) console.error(err);
         res.redirect('/admin');
     });
+});
+
+// --- RUTA DEL ALUMNO ---
+// Vista del alumno (Solo para que no dé error 404 al entrar como 'felipe')
+app.get('/alumno', (req, res) => {
+    if (!req.session.usuario || req.session.usuario.rol !== 'alumno') {
+        return res.status(401).send('401 Unauthorized: Área restringida para alumnos');
+    }
+    res.render('alumno', { usuario: req.session.usuario });
 });
 
 // Iniciar el servidor
