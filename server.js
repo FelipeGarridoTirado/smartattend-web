@@ -20,7 +20,7 @@ app.use(session({
     saveUninitialized: false
 }));
 
-// Conexión a la Base de Datos SQLite (Con auto-creación y Seeding)
+// Conexión a la Base de Datos SQLite
 const db = new sqlite3.Database('./db/smartattend.db', (err) => {
     if (err) {
         console.error("Error conectando a la base de datos:", err.message);
@@ -28,7 +28,6 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
         console.log("Conectado a la base de datos SQLite.");
         
         db.serialize(() => {
-            // 1. Crear las tablas
             db.run(`CREATE TABLE IF NOT EXISTS usuarios (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE,
@@ -42,27 +41,39 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
                 email TEXT
             )`);
 
-            // 2. Sembrar Usuarios (Admin y Alumno)
+            db.run(`CREATE TABLE IF NOT EXISTS asistencias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT,
+                fecha TEXT,
+                estado TEXT
+            )`);
+
+            // Sembrar Usuarios
             db.get("SELECT * FROM usuarios WHERE username = 'admin'", (err, row) => {
-                if (!row) {
-                    db.run("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'admin')");
-                }
+                if (!row) db.run("INSERT INTO usuarios (username, password, rol) VALUES ('admin', 'admin123', 'admin')");
             });
 
             db.get("SELECT * FROM usuarios WHERE username = 'felipe'", (err, row) => {
-                if (!row) {
-                    db.run("INSERT INTO usuarios (username, password, rol) VALUES ('felipe', 'alumno123', 'alumno')");
-                }
+                if (!row) db.run("INSERT INTO usuarios (username, password, rol) VALUES ('felipe', 'alumno123', 'alumno')");
             });
 
-            // 3. Sembrar Alumnos de prueba en la tabla principal
+            // Sembrar Alumnos
             db.get("SELECT COUNT(*) as count FROM alumnos", (err, row) => {
-                // Si la tabla alumnos tiene 0 registros, insertamos los de prueba
                 if (row && row.count === 0) {
                     db.run("INSERT INTO alumnos (nombre, email) VALUES ('Felipe Garrido', 'felipe@email.com')");
                     db.run("INSERT INTO alumnos (nombre, email) VALUES ('María López', 'maria@email.com')");
                     db.run("INSERT INTO alumnos (nombre, email) VALUES ('Carlos Gómez', 'carlos@email.com')");
-                    console.log("Alumnos de prueba sembrados con éxito.");
+                }
+            });
+
+            // Sembrar Asistencias
+            db.get("SELECT COUNT(*) as count FROM asistencias", (err, row) => {
+                if (row && row.count === 0) {
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-20', 'Presente')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-21', 'Presente')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-22', 'Falta')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-23', 'Retraso')");
+                    db.run("INSERT INTO asistencias (username, fecha, estado) VALUES ('felipe', '2024-05-24', 'Presente')");
                 }
             });
         });
@@ -82,11 +93,8 @@ app.post('/login', (req, res) => {
         
         if (row) {
             req.session.usuario = row;
-            if (row.rol === 'admin') {
-                res.redirect('/admin');
-            } else {
-                res.redirect('/alumno');
-            }
+            if (row.rol === 'admin') res.redirect('/admin');
+            else res.redirect('/alumno');
         } else {
             res.render('login', { error: "Usuario o contraseña incorrectos. Inténtalo de nuevo." });
         }
@@ -98,7 +106,7 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
-// --- RUTAS DEL ADMINISTRADOR (CRUD y Filtros) ---
+// --- RUTAS DEL ADMINISTRADOR ---
 
 app.get('/admin', (req, res) => {
     if (!req.session.usuario || req.session.usuario.rol !== 'admin') {
@@ -116,7 +124,6 @@ app.get('/admin', (req, res) => {
 
     const columnasValidas = ['id', 'nombre', 'email'];
     const ordenesValidos = ['ASC', 'DESC'];
-    
     const columnaOrden = columnasValidas.includes(sort) ? sort : 'id';
     const tipoOrden = ordenesValidos.includes(order) ? order : 'ASC';
 
@@ -137,6 +144,18 @@ app.post('/admin/add', (req, res) => {
     });
 });
 
+// NUEVA RUTA: Editar Alumno
+app.post('/admin/edit/:id', (req, res) => {
+    if (!req.session.usuario || req.session.usuario.rol !== 'admin') return res.status(401).send('401 Unauthorized');
+    const { id } = req.params;
+    const { nombre, email } = req.body;
+    
+    db.run("UPDATE alumnos SET nombre = ?, email = ? WHERE id = ?", [nombre, email, id], (err) => {
+        if (err) console.error(err);
+        res.redirect('/admin');
+    });
+});
+
 app.post('/admin/delete/:id', (req, res) => {
     if (!req.session.usuario || req.session.usuario.rol !== 'admin') return res.status(401).send('401 Unauthorized');
     const { id } = req.params;
@@ -152,13 +171,16 @@ app.get('/alumno', (req, res) => {
     if (!req.session.usuario || req.session.usuario.rol !== 'alumno') {
         return res.status(401).send('401 Unauthorized: Área restringida para alumnos');
     }
-    res.render('alumno', { usuario: req.session.usuario });
+    
+    const username = req.session.usuario.username;
+    db.all("SELECT * FROM asistencias WHERE username = ? ORDER BY fecha DESC", [username], (err, asistencias) => {
+        if (err) return res.status(500).send("Error obteniendo asistencias");
+        res.render('alumno', { usuario: req.session.usuario, asistencias: asistencias });
+    });
 });
 
-// Iniciar el servidor
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
 
-// Exportar para Jest (Pruebas)
 module.exports = app;

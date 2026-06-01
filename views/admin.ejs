@@ -67,10 +67,42 @@
                                 <td><%= alumno.nombre %></td>
                                 <td><%= alumno.email %></td>
                                 <td class="text-center">
+                                    
+                                    <button type="button" class="btn btn-sm btn-warning me-2" data-bs-toggle="modal" data-bs-target="#editModal<%= alumno.id %>">
+                                        Editar
+                                    </button>
+
                                     <form action="/admin/delete/<%= alumno.id %>" method="POST" style="display:inline;">
                                         <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('¿Seguro que deseas eliminar este alumno?')">Eliminar</button>
                                     </form>
-                                </td>
+
+                                    <div class="modal fade text-start" id="editModal<%= alumno.id %>" tabindex="-1" aria-labelledby="editModalLabel<%= alumno.id %>" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="editModalLabel<%= alumno.id %>">Editar Alumno</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="/admin/edit/<%= alumno.id %>" method="POST">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold">Nombre Completo</label>
+                                                            <input type="text" class="form-control" name="nombre" value="<%= alumno.nombre %>" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold">Correo Electrónico</label>
+                                                            <input type="email" class="form-control" name="email" value="<%= alumno.email %>" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    </td>
                             </tr>
                         <% }) %>
                     <% } else { %>

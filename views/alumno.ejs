@@ -19,12 +19,49 @@
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card p-4 text-center shadow-lg">
+                
+                <div class="card p-4 text-center shadow-lg mb-4">
                     <h2 class="text-success mb-3">¡Bienvenido, <%= usuario.username %>!</h2>
-                    <p class="lead text-muted">Has iniciado sesión correctamente como alumno.</p>
-                    <hr class="my-4">
-                    <p>En el futuro, aquí podrás ver tu porcentaje de asistencia y tus justificaciones médicas.</p>
+                    <p class="lead text-muted">Aquí puedes consultar tu registro de asistencia.</p>
                 </div>
+
+                <div class="card p-4 shadow-sm">
+                    <h4 class="mb-4">Mi Historial de Asistencia</h4>
+                    
+                    <% if (asistencias && asistencias.length > 0) { %>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-success">
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% asistencias.forEach(asistencia => { %>
+                                        <tr>
+                                            <td><strong><%= asistencia.fecha %></strong></td>
+                                            <td>
+                                                <% if (asistencia.estado === 'Presente') { %>
+                                                    <span class="badge bg-success py-2 px-3">Presente</span>
+                                                <% } else if (asistencia.estado === 'Falta') { %>
+                                                    <span class="badge bg-danger py-2 px-3">Falta</span>
+                                                <% } else { %>
+                                                    <span class="badge bg-warning text-dark py-2 px-3"><%= asistencia.estado %></span>
+                                                <% } %>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    <% } else { %>
+                        <div class="alert alert-info" role="alert">
+                            No hay registros de asistencia todavía.
+                        </div>
+                    <% } %>
+                </div>
+
             </div>
         </div>
     </div>
