@@ -1,6 +1,44 @@
+/* --- ESTILOS GLOBALES --- */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
 }
+
+/* --- TARJETAS (CARDS) ANIMADAS --- */
 .card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Al pasar el ratón, la tarjeta "flota" hacia arriba */
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* --- TABLAS MÁS ELEGANTES --- */
+.table {
     border-radius: 10px;
+    overflow: hidden; /* Mantiene los bordes redondeados en las esquinas */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.table-dark th {
+    background-color: #2c3e50 !important; /* Un azul marino oscuro muy profesional */
+    color: white;
+}
+
+/* --- BOTONES CON TRANSICIONES --- */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: scale(1.05); /* El botón crece un 5% al pasar el ratón */
 }
