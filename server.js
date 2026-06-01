@@ -33,7 +33,8 @@ const db = new sqlite3.Database('./db/smartattend.db', (err) => {
 
 // Página de inicio (Login) - Responde 200 OK para el Test
 app.get('/', (req, res) => {
-    res.render('login');
+    // Le enviamos error: null para que EJS no crashee al cargar la primera vez
+    res.render('login', { error: null });
 });
 
 // Procesar el Login
@@ -53,7 +54,8 @@ app.post('/login', (req, res) => {
                 res.redirect('/alumno');
             }
         } else {
-            res.send("Usuario o contraseña incorrectos. <a href='/'>Volver</a>");
+            // Si falla la contraseña, recarga el login pero ahora sí envía el mensaje de error
+            res.render('login', { error: "Usuario o contraseña incorrectos. Inténtalo de nuevo." });
         }
     });
 });
@@ -78,6 +80,7 @@ app.get('/admin', (req, res) => {
     let query = "SELECT * FROM alumnos";
     let queryParams = [];
 
+    // Si hay búsqueda, añadimos el WHERE
     if (search) {
         query += " WHERE nombre LIKE ?";
         queryParams.push('%' + search + '%');
@@ -92,6 +95,7 @@ app.get('/admin', (req, res) => {
 
     query += ` ORDER BY ${columnaOrden} ${tipoOrden}`;
 
+    // Ejecutamos la consulta
     db.all(query, queryParams, (err, alumnos) => {
         if (err) return res.status(500).send("Error en la base de datos");
         res.render('admin', { alumnos: alumnos, search: search });
